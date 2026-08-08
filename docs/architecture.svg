@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="720" viewBox="0 0 1040 720" font-family="Menlo, Consolas, monospace">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1040" height="720" fill="#ffffff"/>
+
+  <text x="500" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#111">Batched master/worker A* search loop</text>
+
+  <!-- Frontier queue -->
+  <rect x="330" y="48" width="300" height="66" rx="6" fill="#eeeeee" stroke="#333" stroke-width="1.5"/>
+  <text x="480" y="74" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">Global priority queue</text>
+  <text x="480" y="92" text-anchor="middle" font-size="12" fill="#333">frontier, ordered by f = pushes + h</text>
+  <text x="480" y="107" text-anchor="middle" font-size="11" fill="#666">shared, protected by frontier_mutex</text>
+
+  <!-- arrow down to master pull -->
+  <line x1="480" y1="114" x2="480" y2="158" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="645" y="132" text-anchor="start" font-size="12" fill="#111">Step 1 — lock frontier_mutex</text>
+  <text x="645" y="148" text-anchor="start" font-size="12" fill="#111">pop up to 256 best nodes</text>
+
+  <!-- Master pull box -->
+  <rect x="330" y="158" width="300" height="66" rx="6" fill="#e4e9f7" stroke="#333" stroke-width="1.5"/>
+  <text x="480" y="184" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">Master thread</text>
+  <text x="480" y="202" text-anchor="middle" font-size="12" fill="#333">current_batch[] , then unlock</text>
+
+  <!-- arrow down to workers -->
+  <line x1="480" y1="224" x2="480" y2="266" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="645" y="242" text-anchor="start" font-size="12" fill="#111">Step 2 — #pragma omp parallel for</text>
+  <text x="645" y="258" text-anchor="start" font-size="12" fill="#111">schedule(dynamic) fans out batch</text>
+
+  <!-- Workers container (dashed = lock-free) -->
+  <rect x="50" y="266" width="900" height="196" rx="8" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="7,5"/>
+  <text x="70" y="290" text-anchor="start" font-size="12" font-style="italic" fill="#555">lock-free: each worker writes only its own buffer</text>
+
+  <!-- 4 worker boxes -->
+  <g font-size="12">
+    <!-- worker 0 -->
+    <rect x="72" y="306" width="196" height="140" rx="6" fill="#f6f6f6" stroke="#333" stroke-width="1.5"/>
+    <text x="170" y="326" text-anchor="middle" font-weight="bold" fill="#111">Worker 0</text>
+    <text x="170" y="346" text-anchor="middle" fill="#333">goal check</text>
+    <text x="170" y="364" text-anchor="middle" fill="#333">staleness check</text>
+    <text x="170" y="382" text-anchor="middle" fill="#333">generate_successors()</text>
+    <line x1="92" y1="394" x2="248" y2="394" stroke="#bbb" stroke-width="1"/>
+    <text x="170" y="412" text-anchor="middle" fill="#555">→ thread_results[0]</text>
+    <text x="170" y="430" text-anchor="middle" fill="#555">(private buffer)</text>
+
+    <!-- worker 1 -->
+    <rect x="284" y="306" width="196" height="140" rx="6" fill="#f6f6f6" stroke="#333" stroke-width="1.5"/>
+    <text x="382" y="326" text-anchor="middle" font-weight="bold" fill="#111">Worker 1</text>
+    <text x="382" y="346" text-anchor="middle" fill="#333">goal check</text>
+    <text x="382" y="364" text-anchor="middle" fill="#333">staleness check</text>
+    <text x="382" y="382" text-anchor="middle" fill="#333">generate_successors()</text>
+    <line x1="304" y1="394" x2="460" y2="394" stroke="#bbb" stroke-width="1"/>
+    <text x="382" y="412" text-anchor="middle" fill="#555">→ thread_results[1]</text>
+    <text x="382" y="430" text-anchor="middle" fill="#555">(private buffer)</text>
+
+    <!-- worker 2 -->
+    <rect x="496" y="306" width="196" height="140" rx="6" fill="#f6f6f6" stroke="#333" stroke-width="1.5"/>
+    <text x="594" y="326" text-anchor="middle" font-weight="bold" fill="#111">Worker 2</text>
+    <text x="594" y="346" text-anchor="middle" fill="#333">goal check</text>
+    <text x="594" y="364" text-anchor="middle" fill="#333">staleness check</text>
+    <text x="594" y="382" text-anchor="middle" fill="#333">generate_successors()</text>
+    <line x1="516" y1="394" x2="672" y2="394" stroke="#bbb" stroke-width="1"/>
+    <text x="594" y="412" text-anchor="middle" fill="#555">→ thread_results[2]</text>
+    <text x="594" y="430" text-anchor="middle" fill="#555">(private buffer)</text>
+
+    <!-- worker 3 (... more threads) -->
+    <rect x="708" y="306" width="220" height="140" rx="6" fill="#f6f6f6" stroke="#333" stroke-width="1.5"/>
+    <text x="818" y="326" text-anchor="middle" font-weight="bold" fill="#111">Worker N (…)</text>
+    <text x="818" y="346" text-anchor="middle" fill="#333">goal check</text>
+    <text x="818" y="364" text-anchor="middle" fill="#333">staleness check</text>
+    <text x="818" y="382" text-anchor="middle" fill="#333">generate_successors()</text>
+    <line x1="728" y1="394" x2="908" y2="394" stroke="#bbb" stroke-width="1"/>
+    <text x="818" y="412" text-anchor="middle" fill="#555">→ thread_results[N]</text>
+    <text x="818" y="430" text-anchor="middle" fill="#555">(private buffer)</text>
+  </g>
+
+  <!-- arrow down to merge -->
+  <line x1="480" y1="462" x2="480" y2="504" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="645" y="480" text-anchor="start" font-size="12" fill="#111">Step 3 — lock frontier_mutex</text>
+  <text x="645" y="496" text-anchor="start" font-size="12" fill="#111">merge every buffer, dedup by cost_key</text>
+
+  <!-- Master merge box -->
+  <rect x="330" y="504" width="300" height="66" rx="6" fill="#e4e9f7" stroke="#333" stroke-width="1.5"/>
+  <text x="480" y="530" text-anchor="middle" font-size="14" font-weight="bold" fill="#111">Master thread</text>
+  <text x="480" y="548" text-anchor="middle" font-size="12" fill="#333">update cost_map, parent_map, frontier</text>
+
+  <!-- loop back arrow, routed down the right edge and back up -->
+  <path d="M 630 537 L 960 537 L 960 81 L 630 81" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="980" y="440" text-anchor="middle" font-size="12" fill="#111" transform="rotate(-90 980 440)">repeat until goal found or frontier is empty</text>
+
+  <!-- legend -->
+  <g font-size="11" fill="#444">
+    <rect x="60" y="620" width="16" height="16" fill="#e4e9f7" stroke="#333" stroke-width="1.5"/>
+    <text x="82" y="633" text-anchor="start">solid border, shaded — under frontier_mutex</text>
+    <rect x="60" y="642" width="16" height="16" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="82" y="655" text-anchor="start">dashed border — lock-free, private per thread</text>
+  </g>
+</svg>
