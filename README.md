@@ -40,6 +40,22 @@ The solution move string (`WASD`) prints to stdout; solve time to stderr.
 The A* cost is the **number of box pushes**, not the total number of player
 walking moves in the returned `WASD` string.
 
+## Validation
+
+The maintained version was rebuilt and checked on all 25 course cases:
+
+- all 25 produced valid solutions accepted by `validate.py`;
+- push counts matched the submitted version on 23/25 cases and improved on 2
+  (`82→80` and `28→26` pushes);
+- the two improved cases were rerun four times each with identical push counts;
+- the stronger heuristic and safer termination increase work on some hard
+  cases (for example `7.8s→9.8s` on one case), while other cases were flat or
+  faster (`8.1s→6.1s` on another).
+
+These measurements are from the course test set; the test inputs and grader
+are not redistributed in this repository. See [Design Notes](docs/DESIGN.md#validation-and-performance)
+for the interpretation and trade-off.
+
 ## Design
 
 Precomputation, exact assignment heuristic, reachability-based state
