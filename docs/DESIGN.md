@@ -164,6 +164,43 @@ the original submission frozen in place:
 The Git history preserves the graded version; these later changes are
 maintenance fixes rather than claims about what was originally submitted.
 
+## Validation and performance
+
+The maintained version was rebuilt with
+
+```sh
+g++ -std=c++17 -O3 -fopenmp src/solver.cpp -o solver
+```
+
+and checked against all 25 course cases with the course's `validate.py`.
+Every output was accepted as a legitimate solve.
+
+Compared with the submitted version, push counts were unchanged on 23/25
+cases and strictly improved on two:
+
+| Case | Submitted | Maintained |
+| ---- | --------- | ---------- |
+| 23   | 82 pushes | 80 pushes  |
+| 25   | 28 pushes | 26 pushes  |
+
+The two improved cases were rerun four times each and returned the same push
+count on every run. That is direct evidence that the submitted first-goal
+batch termination could stop at a suboptimal incumbent, and that the new
+termination rule removes that nondeterministic loss of push optimality on
+these cases.
+
+The correction is not free. Hungarian matching is `O(n^3)` in the number of
+boxes rather than the old greedy assignment's `O(n^2)`, and incumbent-bound
+termination can keep searching after a goal has already been found. The
+runtime impact was workload-dependent: one slow case increased from roughly
+`7.8s` to `9.8s`, most cases were roughly flat, and case 25 improved from
+about `8.1s` to `6.1s` despite finding a lower-push solution. These are
+end-to-end observations on the course cases, not a controlled microbenchmark,
+so they should be read as evidence of the trade-off rather than a general
+speed claim.
+
+The course test inputs and validation script are not redistributed here.
+
 ## Known limitations
 
 - **256-cell map ceiling.** State positions occupy one byte, so maps larger
