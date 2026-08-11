@@ -2,42 +2,49 @@
 
 A parallel A* solver for Sokoban. `src/solver.cpp` is the original work here
 — the map format and grading harness come from the course and aren't
-included (see [Background](docs/DESIGN.md#background)).
+included (see [Background](docs/DESIGN.md#background)). The maintained
+version searches for a minimum-push solution with an admissible wall-aware
+assignment heuristic and batched OpenMP expansion.
 
 ![Batched master/worker A* search loop](docs/architecture.svg)
 
 ## Highlights
 
-- **Batched master/worker parallelism** — a master thread pulls a batch off
-  the shared frontier under lock, OpenMP workers expand it lock-free into
-  private buffers, the master merges. [How it works](docs/DESIGN.md#parallel-search-batched-masterworker-a)
-- **Wall-aware assignment heuristic** — a one-shot greedy matching over
-  precomputed true (BFS) distances, not Manhattan distance, so two boxes
-  never get double-counted onto the same target. [Heuristic walkthrough](docs/DESIGN.md#heuristic-greedy-boxtarget-assignment)
-- **Four iterations to get the concurrency right**, including one that
-  deadlocked and one with a real correctness bug —
-  [the full evolution](docs/DESIGN.md#getting-the-concurrency-model-right)
-- **A documented, not hidden, correctness tradeoff** — batching can return
-  a solution that isn't the shortest one.
-  [Known rough edges](docs/DESIGN.md#known-rough-edges-documented-not-fixed)
+- **Batched master/worker parallelism** — the main thread pulls a batch from
+  the shared frontier, OpenMP workers expand it into private buffers, and the
+  main thread merges the results. [How it works](docs/DESIGN.md#parallel-search-batched-masterworker-a)
+- **Exact wall-aware assignment heuristic** — Hungarian matching over
+  precomputed BFS distances gives the minimum box-to-target assignment cost
+  without assigning two boxes to the same target. Because those distances
+  ignore other boxes and player positioning, the result remains a lower bound
+  on the number of pushes. [Heuristic walkthrough](docs/DESIGN.md#heuristic-exact-boxtarget-assignment)
+- **Batching without giving up minimum-push optimality** — finding a goal in
+  a batch records an incumbent rather than stopping immediately; search ends
+  only when the smallest remaining `f = pushes + h` cannot beat that goal.
+  [Termination rule](docs/DESIGN.md#preserving-minimum-push-optimality)
+- **The development history is preserved** — the submitted version went
+  through per-node locking, a broken deduplication key, greedy assignment,
+  and first-goal batch termination before the maintained version corrected
+  those issues. [The evolution](docs/DESIGN.md#getting-the-concurrency-model-right)
 
 ## Installation
 
-Builds as ordinary C++17 against OpenMP and Intel TBB (`brew install tbb` /
-`apt install libtbb-dev`):
+Builds as ordinary C++17 with OpenMP:
 
-```
-g++ -std=c++17 -O3 -pthread -fopenmp -ltbb src/solver.cpp -o solver
+```sh
+g++ -std=c++17 -O3 -fopenmp src/solver.cpp -o solver
 ./solver <input_file>
 ```
 
 The solution move string (`WASD`) prints to stdout; solve time to stderr.
+The A* cost is the **number of box pushes**, not the total number of player
+walking moves in the returned `WASD` string.
 
 ## Design
 
-Precompute phase, the heuristic, the parallel search loop, the
-correctness/throughput tradeoff of batching, and an OpenMP-vs-pthreads
-comparison: [`docs/DESIGN.md`](docs/DESIGN.md).
+Precomputation, exact assignment heuristic, reachability-based state
+canonicalization, the batched parallel search loop, and the post-submission
+correctness fixes are documented in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## License
 
